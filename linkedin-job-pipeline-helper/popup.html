@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkedIn Job Pipeline</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+
+      <header class="header">
+        <div class="header-left">
+          <div class="logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect width="24" height="24" rx="4" fill="#0a66c2"/>
+              <path d="M7 10v7H5v-7h2zm1-3a1.25 1.25 0 11-2.5 0A1.25 1.25 0 018 7zm4 3v7h-2v-7h2zm0-1h-2V8h2v1zm6 8h-2v-3.75c0-1-.36-1.5-1.1-1.5-.8 0-1.15.55-1.15 1.5V17h-2v-7h2v1c.45-.7 1.1-1.2 2.05-1.2 1.5 0 2.2 1 2.2 2.85V17z" fill="#fff"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Job Pipeline</h1>
+            <p class="subtitle">External Apply Tracker</p>
+          </div>
+        </div>
+        <div class="header-stats" id="headerStats"></div>
+      </header>
+
+      <div class="toolbar">
+        <button id="refreshBtn" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.27-12.27L1 10"/></svg>
+          Refresh
+        </button>
+        <button id="sortBtn" class="btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14m-7-7l7 7 7-7"/></svg>
+          Priority Sort
+        </button>
+        <div class="toolbar-spacer"></div>
+        <button id="exportCsvBtn" class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV
+        </button>
+        <button id="exportJsonBtn" class="btn btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          JSON
+        </button>
+        <button id="clearBtn" class="btn btn-danger">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Clear
+        </button>
+      </div>
+
+      <div id="countryFilter" class="country-filter"></div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+        <p>No jobs collected yet</p>
+        <span>Browse LinkedIn Jobs normally and the extension will passively capture listings.</span>
+      </div>
+
+      <div class="table-wrapper" id="tableWrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-title">Title</th>
+              <th class="col-company">Company</th>
+              <th class="col-location">Location</th>
+              <th class="col-type">Type</th>
+              <th class="col-category">Category</th>
+              <th class="col-priority">Score</th>
+              <th class="col-apply">Apply</th>
+            </tr>
+          </thead>
+          <tbody id="jobsTableBody"></tbody>
+        </table>
+      </div>
+
+    </main>
+
+    <script src="utils.js"></script>
+    <script src="storage.js"></script>
+    <script src="exporter.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

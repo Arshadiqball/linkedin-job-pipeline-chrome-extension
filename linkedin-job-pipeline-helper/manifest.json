@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Job Pipeline Helper",
+  "version": "1.0.0",
+  "description": "Passive LinkedIn external-apply job collector and pipeline organizer.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": ["https://www.linkedin.com/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/jobs/*"],
+      "js": [
+        "utils.js",
+        "classifier.js",
+        "prioritizer.js",
+        "storage.js",
+        "extractor.js",
+        "observer.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "LinkedIn Job Pipeline",
+    "default_popup": "popup.html"
+  }
+}
