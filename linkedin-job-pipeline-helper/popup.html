@@ -19,12 +19,18 @@
           </div>
           <div>
             <h1>Job Pipeline</h1>
-            <p class="subtitle">External Apply Tracker</p>
+            <p class="subtitle">External Apply Tracker · Top Content posting</p>
           </div>
         </div>
         <div class="header-stats" id="headerStats"></div>
       </header>
 
+      <nav class="popup-tabs" role="tablist" aria-label="Main views">
+        <button type="button" class="popup-tab active" role="tab" id="tabJobs" data-tab="jobs" aria-selected="true">Jobs</button>
+        <button type="button" class="popup-tab" role="tab" id="tabPosting" data-tab="posting" aria-selected="false">Posting</button>
+      </nav>
+
+      <section id="panelJobs" class="popup-panel" role="tabpanel" aria-labelledby="tabJobs">
       <div class="toolbar">
         <button id="refreshBtn" class="btn btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 105.27-12.27L1 10"/></svg>
@@ -73,6 +79,44 @@
           <tbody id="jobsTableBody"></tbody>
         </table>
       </div>
+      </section>
+
+      <section id="panelPosting" class="popup-panel hidden" role="tabpanel" aria-labelledby="tabPosting">
+        <p class="posting-lead">
+          Completed Top Content categories and every post touched by the runner (same data as
+          <strong>Extension options</strong>). Progress also syncs to LinkedIn site storage when you use Top Content.
+        </p>
+        <div class="toolbar posting-toolbar">
+          <button id="startCommentProcessBtn" type="button" class="btn btn-primary">
+            Start Comment Process
+          </button>
+          <button id="openTopContentOptionsBtn" type="button" class="btn btn-outline">
+            OpenAI &amp; full settings
+          </button>
+          <button id="postingRefreshBtn" type="button" class="btn btn-outline">Refresh list</button>
+          <button id="postingExportBackupBtn" type="button" class="btn btn-outline">Export JSON backup</button>
+        </div>
+
+        <h2 class="posting-heading">Categories completed</h2>
+        <p id="postingCategoriesEmpty" class="posting-empty hidden">No completed categories yet.</p>
+        <ul id="postingCategoriesList" class="posting-cat-list"></ul>
+
+        <h2 class="posting-heading">Posts (ledger)</h2>
+        <p id="postingPostsEmpty" class="posting-empty">No posts recorded yet — run <strong>Start Comment Process</strong> on LinkedIn Top Content.</p>
+        <div class="table-wrapper posting-table-wrap hidden" id="postingTableWrap">
+          <table class="posting-table">
+            <thead>
+              <tr>
+                <th>Outcome</th>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Path</th>
+              </tr>
+            </thead>
+            <tbody id="postingPostsBody"></tbody>
+          </table>
+        </div>
+      </section>
 
     </main>
 

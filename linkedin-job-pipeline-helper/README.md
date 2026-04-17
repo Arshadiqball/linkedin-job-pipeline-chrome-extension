@@ -106,9 +106,105 @@ linkedin-job-pipeline-helper/
 ├ exporter.js
 ├ popup.html
 ├ popup.js
+├ options.html
+├ options.js
 ├ popup.css
-└ utils.js
+├ utils.js
+├ utils/
+│  ├ timing.js                 (randomDelay / jitter — anti-detection timing)
+│  ├ categoryExtractor.js      (post-card selectors shared with the runner)
+│  └ linkedInOriginMirror.js   (mirrors ledger + run snapshot to linkedin.com localStorage)
+├ services/
+│  └ commentGenerator.js       (short, non-generic, slightly randomised comments)
+└ content/
+   ├ categoryRunner.js         (headless helpers for each of the 3 pages)
+   └ topContentMain.js         (state-driven dispatcher across page loads)
 ```
+
+## LinkedIn Top Content Comment Runner
+
+A second feature is bundled in the same extension. It only activates on
+`https://www.linkedin.com/top-content/*` and `https://www.linkedin.com/feed/update/*`,
+and is completely separate from the passive Jobs pipeline above.
+
+### Flow
+
+The runner is fully headless (no in-page UI) and triggered from the extension
+popup via the **Start Comment Process** button. Run state (current category,
+post counter, list of already-commented posts, list of completed categories)
+is persisted in `chrome.storage.local` so the workflow survives full page
+reloads and keeps advancing after each navigation.
+
+```
+Popup:
+  Set run state { running: true }.
+  If the active tab is not already on /top-content/* or /feed/update/*,
+  navigate it to https://www.linkedin.com/top-content/.
+
+Hub page (/top-content/):
+  If we have an in-progress category with < 5 successful posts done → go to that category.
+  Else → pick the first visible category link that isn't completed (processed list
+  OR already has 5 posted rows in the ledger for that category path) → navigate.
+  If none remain → set run to idle (progress lists are kept).
+
+Category page (/top-content/<slug>/...):
+  If counter already reached 5 → mark category done, return to hub.
+  Else → scroll to load posts, find the first visible post whose comment
+  link is not in commentedPosts → navigate to that post detail URL.
+  If no uncommented post is found → mark category done, return to hub.
+
+Post detail page (/feed/update/...):
+  Record the post as seen (so we never retry it, even on failure).
+  Click Like (if not already liked).
+  Generate a short comment from the post text.
+  Type it into the ql-editor → click the submit button.
+  If the comment posted successfully → increment the category counter.
+  If the counter reaches 5 → mark the category done.
+  Navigate back to the hub to continue the loop.
+```
+
+The loop therefore walks every category in DOM order, posting up to 5
+comments in each, and stops once no unprocessed categories remain. Random
+delays (0.8–5 s) are applied between steps. Failures on a single post are
+logged but don't abort the run — that post is blocklisted and the runner
+moves to the next one.
+
+### OpenAI comment generation
+
+1. Open the extension popup → **Top Content — OpenAI key** (or Chrome →
+   Extensions → this extension → **Extension options**).
+2. Paste your **OpenAI API key** and save. Keys are stored only in
+   `chrome.storage.local` in this browser profile and are sent only to
+   `https://api.openai.com` from the **service worker** (never hard-code a key
+   in the repo).
+3. Optional: set a model id (default `gpt-4o-mini`).
+
+On each post detail page, the extension reads a **title** and **description**
+from the DOM, asks the model for a short comment (at most **3 lines**), then
+falls back to the built-in template generator if the key is missing or the
+API errors.
+
+### Global post ledger + LinkedIn `localStorage` mirror
+
+Every visited post path is recorded under `topContentPostLedger` in
+`chrome.storage.local` (title, category path, description snippet, timestamps,
+outcome). Each post row stores **`categoryPath`** so the runner can tell when a
+category already has **5 successful** comments even if `processedCategories`
+was out of sync.
+
+The extension **also mirrors** the ledger and a small run snapshot into
+`localStorage` on `https://www.linkedin.com` (key `__lJobPipe_tc_mirror_v2__`).
+That data **survives removing and reinstalling the extension** in the same
+browser profile, because it lives under LinkedIn’s origin until you clear
+site data for LinkedIn. On the next LinkedIn visit after reinstall, the
+content script **hydrates** extension storage from that mirror.
+
+Use **Extension options** to see completed categories, the post table, **Export
+JSON backup**, **Import**, or **Clear all Top Content history** (clears
+extension storage and queues a wipe of the mirror on the next LinkedIn load).
+
+Do not paste API keys into chat or source control; revoke any exposed key in
+the OpenAI dashboard and create a new one.
 
 ## Installation (Load Unpacked)
 

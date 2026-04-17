@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkedIn Pipeline — Top Content</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 0 16px 40px;
+        color: #1d2226;
+      }
+      h1 { font-size: 18px; margin: 0 0 8px; }
+      h2 { font-size: 15px; margin: 28px 0 10px; border-bottom: 1px solid #e3e6ea; padding-bottom: 6px; }
+      p.hint { font-size: 13px; color: #57606a; margin: 0 0 14px; line-height: 1.45; }
+      label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+      input[type="password"],
+      input[type="text"],
+      input[type="file"] {
+        width: 100%;
+        max-width: 520px;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid #d0d7de;
+        border-radius: 6px;
+      }
+      button {
+        margin-top: 10px;
+        margin-right: 8px;
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .btn-primary {
+        border: 1px solid #0a66c2;
+        background: #0a66c2;
+        color: #fff;
+      }
+      .btn-primary:hover { background: #004182; }
+      .btn-outline {
+        border: 1px solid #d0d7de;
+        background: #f6f8fa;
+        color: #1d2226;
+      }
+      .btn-outline:hover { background: #eaeef2; }
+      .btn-danger {
+        border: 1px solid #cc1016;
+        background: #cc1016;
+        color: #fff;
+      }
+      .btn-danger:hover { background: #a50d12; }
+      #status { margin-top: 12px; font-size: 13px; }
+      .warn {
+        background: #fff8c5;
+        border: 1px solid #e3c341;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 12px;
+        margin-bottom: 14px;
+        line-height: 1.45;
+      }
+      .ok {
+        background: #e6f9e6;
+        border: 1px solid #7bc97b;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 12px;
+        margin-bottom: 14px;
+        line-height: 1.45;
+      }
+      .scroll {
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid #e3e6ea;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+      th { background: #f6f8fa; position: sticky; top: 0; }
+      code.path { word-break: break-all; font-size: 11px; color: #333; }
+      .pill {
+        display: inline-block;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #eaeef2;
+      }
+      .pill.done { background: #d1f0d1; }
+    </style>
+  </head>
+  <body>
+    <h1>Top Content — OpenAI &amp; progress</h1>
+
+    <div class="ok">
+      Progress is saved in two places: <strong>chrome.storage.local</strong> (extension) and
+      <strong>localStorage on www.linkedin.com</strong> (same browser profile). Uninstalling the
+      extension clears extension storage, but the LinkedIn copy is restored into the extension the
+      next time you open LinkedIn with this extension installed. Use <strong>Export backup</strong>
+      before uninstall if you also clear LinkedIn site data.
+    </div>
+
+    <h2>OpenAI</h2>
+    <p class="hint">
+      Your API key is stored only in this browser profile. It is sent only to OpenAI. Never commit
+      keys to git or paste them in chat — revoke exposed keys in the OpenAI dashboard.
+    </p>
+    <label for="apiKey">OpenAI API key</label>
+    <input id="apiKey" type="password" autocomplete="off" placeholder="sk-…" />
+    <label for="model" style="margin-top: 14px;">Model (optional)</label>
+    <input id="model" type="text" placeholder="gpt-4o-mini" />
+    <div>
+      <button type="button" id="saveBtn" class="btn-primary">Save API settings</button>
+    </div>
+
+    <h2>Categories completed</h2>
+    <p class="hint" id="categoriesEmpty" style="display:none;">No completed categories yet.</p>
+    <ul id="categoriesList"></ul>
+
+    <h2>Posts (ledger)</h2>
+    <p class="hint">Most recent first. Paths match skip logic after reinstall + LinkedIn sync.</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Outcome</th>
+            <th>Category</th>
+            <th>Title</th>
+            <th>Post path</th>
+          </tr>
+        </thead>
+        <tbody id="postsBody"></tbody>
+      </table>
+    </div>
+    <p id="postsEmpty" class="hint" style="display:none;">No posts in the ledger yet. Run on LinkedIn Top Content first.</p>
+
+    <h2>Backup</h2>
+    <button type="button" id="exportBtn" class="btn-outline">Export JSON backup</button>
+    <label for="importFile" style="margin-top: 12px;">Import JSON backup</label>
+    <input id="importFile" type="file" accept="application/json,.json" />
+    <div class="warn" style="margin-top:16px;">
+      <strong>Clear all Top Content history</strong> removes the ledger and run progress from the
+      extension and queues a wipe of the LinkedIn-side mirror on your next visit to LinkedIn.
+    </div>
+    <button type="button" id="clearHistoryBtn" class="btn-danger">Clear all Top Content history</button>
+
+    <div id="status"></div>
+    <script src="options.js"></script>
+  </body>
+</html>

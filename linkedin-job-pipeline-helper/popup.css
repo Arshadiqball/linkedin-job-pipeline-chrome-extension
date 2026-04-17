@@ -38,6 +38,119 @@ body {
   gap: 12px;
 }
 
+/* ---- Tabs (Jobs | Posting) ---- */
+.popup-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.popup-tab {
+  flex: 1;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.popup-tab:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.popup-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.popup-panel.hidden {
+  display: none !important;
+}
+
+.posting-lead {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.posting-toolbar {
+  margin-top: 4px;
+}
+
+.posting-heading {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+}
+
+.posting-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.posting-cat-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  max-height: 120px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.posting-cat-list li {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.posting-cat-list li:last-child {
+  border-bottom: none;
+}
+
+.posting-cat-list code {
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.posting-table-wrap {
+  max-height: 280px;
+}
+
+.posting-table {
+  font-size: 11px;
+}
+
+.posting-table th {
+  font-size: 9px;
+}
+
+.posting-table td {
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.posting-table .mono {
+  font-size: 10px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
 /* ---- Header ---- */
 .header {
   display: flex;
@@ -106,6 +219,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .toolbar-spacer {

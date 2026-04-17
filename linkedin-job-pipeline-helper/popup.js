@@ -2,6 +2,9 @@
   const { getJobs, clearJobs } = globalObj.LinkedInPipeline.storage;
   const { exportCSV, exportJSON } = globalObj.LinkedInPipeline.exporter;
 
+  const LEDGER_KEY = "topContentPostLedger";
+  const STATE_KEY = "topContentRunState";
+
   const dom = {
     body: document.getElementById("jobsTableBody"),
     headerStats: document.getElementById("headerStats"),
@@ -12,7 +15,20 @@
     sortBtn: document.getElementById("sortBtn"),
     exportCsvBtn: document.getElementById("exportCsvBtn"),
     exportJsonBtn: document.getElementById("exportJsonBtn"),
-    clearBtn: document.getElementById("clearBtn")
+    clearBtn: document.getElementById("clearBtn"),
+    startCommentProcessBtn: document.getElementById("startCommentProcessBtn"),
+    openTopContentOptionsBtn: document.getElementById("openTopContentOptionsBtn"),
+    tabJobs: document.getElementById("tabJobs"),
+    tabPosting: document.getElementById("tabPosting"),
+    panelJobs: document.getElementById("panelJobs"),
+    panelPosting: document.getElementById("panelPosting"),
+    postingRefreshBtn: document.getElementById("postingRefreshBtn"),
+    postingExportBackupBtn: document.getElementById("postingExportBackupBtn"),
+    postingCategoriesList: document.getElementById("postingCategoriesList"),
+    postingCategoriesEmpty: document.getElementById("postingCategoriesEmpty"),
+    postingPostsBody: document.getElementById("postingPostsBody"),
+    postingPostsEmpty: document.getElementById("postingPostsEmpty"),
+    postingTableWrap: document.getElementById("postingTableWrap")
   };
 
   let allJobs = [];
@@ -26,6 +42,91 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  function normalizePath(url) {
+    if (!url) return "";
+    try {
+      const u = new URL(url, "https://www.linkedin.com");
+      return (u.pathname || "").replace(/\/+$/, "");
+    } catch (_e) {
+      return String(url).split("?")[0].replace(/\/+$/, "");
+    }
+  }
+
+  function setActiveTab(tab) {
+    const isJobs = tab === "jobs";
+    if (dom.tabJobs) {
+      dom.tabJobs.classList.toggle("active", isJobs);
+      dom.tabJobs.setAttribute("aria-selected", isJobs ? "true" : "false");
+    }
+    if (dom.tabPosting) {
+      dom.tabPosting.classList.toggle("active", !isJobs);
+      dom.tabPosting.setAttribute("aria-selected", !isJobs ? "true" : "false");
+    }
+    if (dom.panelJobs) dom.panelJobs.classList.toggle("hidden", !isJobs);
+    if (dom.panelPosting) dom.panelPosting.classList.toggle("hidden", isJobs);
+    if (!isJobs) renderPostingProgress();
+  }
+
+  function renderPostingProgress() {
+    if (!dom.postingCategoriesList || !dom.postingPostsBody) return;
+    chrome.storage.local.get([LEDGER_KEY, STATE_KEY], (res) => {
+      const ledger = (res[LEDGER_KEY] && res[LEDGER_KEY].posts) || {};
+      const st = res[STATE_KEY] || {};
+      const processed = Array.isArray(st.processedCategories) ? st.processedCategories : [];
+
+      dom.postingCategoriesList.innerHTML = "";
+      if (!processed.length) {
+        dom.postingCategoriesEmpty.classList.remove("hidden");
+      } else {
+        dom.postingCategoriesEmpty.classList.add("hidden");
+        processed.forEach((p) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<code>${escapeHtml(normalizePath(p))}</code> <span class="badge badge-category">done</span>`;
+          dom.postingCategoriesList.appendChild(li);
+        });
+      }
+
+      const rows = Object.entries(ledger).map(([path, row]) => ({ path, row: row || {} }));
+      rows.sort((a, b) => (b.row.updatedAt || 0) - (a.row.updatedAt || 0));
+
+      dom.postingPostsBody.innerHTML = "";
+      if (!rows.length) {
+        dom.postingPostsEmpty.classList.remove("hidden");
+        dom.postingTableWrap.classList.add("hidden");
+      } else {
+        dom.postingPostsEmpty.classList.add("hidden");
+        dom.postingTableWrap.classList.remove("hidden");
+        rows.slice(0, 150).forEach(({ path, row }) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(row.lastOutcome || "—")}</td>
+            <td class="mono">${escapeHtml(normalizePath(row.categoryPath || "") || "—")}</td>
+            <td>${escapeHtml((row.title || "").slice(0, 72) || "—")}</td>
+            <td class="mono">${escapeHtml(path)}</td>`;
+          dom.postingPostsBody.appendChild(tr);
+        });
+      }
+    });
+  }
+
+  function exportPostingBackup() {
+    chrome.storage.local.get([LEDGER_KEY, STATE_KEY], (res) => {
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        version: 1,
+        topContentPostLedger: res[LEDGER_KEY] || { version: 1, posts: {} },
+        topContentRunState: res[STATE_KEY] || {}
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "linkedin-top-content-backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   }
 
   function buildGoogleSearchUrl(companyName, jobTitle) {
@@ -161,13 +262,116 @@
     applyFilter();
   }
 
+  const TOP_CONTENT_HUB_URL = "https://www.linkedin.com/top-content/";
+  const TOP_CONTENT_MATCH = /^https:\/\/www\.linkedin\.com\/(top-content|feed\/update)\//i;
+
+  function persistRunState() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(["topContentRunState"], (res) => {
+          const existing = (res && res.topContentRunState) || {};
+          const next = Object.assign(
+            {
+              commentedPosts: [],
+              processedCategories: [],
+              currentCategoryUrl: null,
+              currentCategoryPostCount: 0,
+              currentPostUrl: null
+            },
+            existing,
+            { running: true, phase: "start", startedAt: Date.now() }
+          );
+          chrome.storage.local.set({ topContentRunState: next }, () => resolve());
+        });
+      } catch (_e) {
+        resolve();
+      }
+    });
+  }
+
+  async function onStartCommentProcess() {
+    dom.startCommentProcessBtn.disabled = true;
+    const originalText = dom.startCommentProcessBtn.textContent;
+    dom.startCommentProcessBtn.textContent = "Starting...";
+    let resetDelayMs = 1400;
+
+    function resetButton() {
+      setTimeout(() => {
+        dom.startCommentProcessBtn.textContent = originalText;
+        dom.startCommentProcessBtn.disabled = false;
+      }, resetDelayMs);
+    }
+
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs && tabs[0];
+
+      if (!activeTab || !activeTab.id) {
+        dom.startCommentProcessBtn.textContent = "No active tab";
+        resetDelayMs = 1600;
+        resetButton();
+        return;
+      }
+
+      await persistRunState();
+
+      const tabUrl = activeTab.url || "";
+      const onSupportedPage = TOP_CONTENT_MATCH.test(tabUrl);
+
+      if (onSupportedPage) {
+        try {
+          await chrome.tabs.sendMessage(activeTab.id, {
+            type: "LINKEDIN_TOP_CONTENT_START"
+          });
+        } catch (_msgErr) {
+          // Content script may not yet be ready — state is persisted, so dispatch
+          // will run on next page load.
+        }
+        dom.startCommentProcessBtn.textContent = "Started";
+        resetDelayMs = 1200;
+      } else {
+        await chrome.tabs.update(activeTab.id, { url: TOP_CONTENT_HUB_URL });
+        dom.startCommentProcessBtn.textContent = "Opening Top Content…";
+        resetDelayMs = 1600;
+      }
+      resetButton();
+    } catch (_err) {
+      dom.startCommentProcessBtn.textContent = "Start failed";
+      resetDelayMs = 1800;
+      resetButton();
+    }
+  }
+
   dom.refreshBtn.addEventListener("click", () => void refreshData());
   dom.sortBtn.addEventListener("click", sortByPriority);
   dom.exportCsvBtn.addEventListener("click", () => exportCSV(filteredJobs));
   dom.exportJsonBtn.addEventListener("click", () => exportJSON(filteredJobs));
   dom.clearBtn.addEventListener("click", () => void onClearData());
+  dom.startCommentProcessBtn.addEventListener("click", () => void onStartCommentProcess());
+  if (dom.openTopContentOptionsBtn) {
+    dom.openTopContentOptionsBtn.addEventListener("click", () => {
+      chrome.runtime.openOptionsPage();
+    });
+  }
+  if (dom.tabJobs) {
+    dom.tabJobs.addEventListener("click", () => setActiveTab("jobs"));
+  }
+  if (dom.tabPosting) {
+    dom.tabPosting.addEventListener("click", () => setActiveTab("posting"));
+  }
+  if (dom.postingRefreshBtn) {
+    dom.postingRefreshBtn.addEventListener("click", () => renderPostingProgress());
+  }
+  if (dom.postingExportBackupBtn) {
+    dom.postingExportBackupBtn.addEventListener("click", () => exportPostingBackup());
+  }
+
+  chrome.storage.onChanged.addListener(() => {
+    renderPostingProgress();
+  });
 
   void refreshData();
+  renderPostingProgress();
 
-  globalObj.LinkedInPipeline.popup = { renderTable };
+  globalObj.LinkedInPipeline.popup = { renderTable, renderPostingProgress, setActiveTab };
 })(globalThis);
